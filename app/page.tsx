@@ -31,7 +31,7 @@ export default function Home() {
             <p className="text-lg md:text-xl max-w-2xl mb-10 text-white/90 font-pt-serif">
               Instantly photograph any label or list and receive refined, tailor-made pairings wherever you are.
             </p>
-            <Link href="https://forms.example.com/sommwhere-survey" target="_blank" rel="noopener noreferrer">
+            <Link href="https://chrisramesh.typeform.com/to/aFzznCNs" target="_blank" rel="noopener noreferrer">
               <Button className="bg-wine-red hover:bg-wine-red/90 text-white text-lg px-8 py-6 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2 font-pt-serif">
                 Join Waitlist
                 <ArrowRight className="h-5 w-5" />
@@ -90,7 +90,7 @@ export default function Home() {
         <p className="text-lg max-w-xl mb-10 text-center text-primary-dark/80 font-pt-serif">
           Be among the first to experience Sommwhere and help shape the future of wine discovery.
         </p>
-        <Link href="https://forms.example.com/sommwhere-survey" target="_blank" rel="noopener noreferrer">
+        <Link href="https://chrisramesh.typeform.com/to/aFzznCNs" target="_blank" rel="noopener noreferrer">
           <Button className="bg-wine-red hover:bg-wine-red/90 text-white text-lg px-8 py-6 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2 font-pt-serif">
             Take Survey
             <ArrowRight className="h-5 w-5" />
