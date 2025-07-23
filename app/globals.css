@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 180 4% 20%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 180 4% 20%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 180 4% 20%;
+
+  --primary: 180 4% 20%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 345 51% 31%;
+  --secondary-foreground: 0 0% 100%;
+
+  --muted: 42 14% 89%;
+  --muted-foreground: 180 4% 40%;
+
+  --accent: 345 51% 31%;
+  --accent-foreground: 0 0% 100%;
+
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 180 4% 85%;
+  --input: 180 4% 85%;
+  --ring: 180 4% 20%;
+
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: 180 4% 10%;
+  --foreground: 0 0% 100%;
+
+  --card: 180 4% 10%;
+  --card-foreground: 0 0% 100%;
+
+  --popover: 180 4% 10%;
+  --popover-foreground: 0 0% 100%;
+
+  --primary: 0 0% 100%;
+  --primary-foreground: 180 4% 10%;
+
+  --secondary: 345 51% 31%;
+  --secondary-foreground: 0 0% 100%;
+
+  --muted: 180 4% 20%;
+  --muted-foreground: 0 0% 80%;
+
+  --accent: 345 51% 31%;
+  --accent-foreground: 0 0% 100%;
+
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 180 4% 20%;
+  --input: 180 4% 20%;
+  --ring: 0 0% 100%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: "PT Serif", serif;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Marcellus", serif;
+  }
+  button {
+    font-family: "PT Serif", serif;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+.bg-off-white {
+  background-color: #e5e3dc;
+}
+
+.text-primary-dark {
+  color: #303636;
+}
+
+.bg-primary-dark {
+  background-color: #303636;
+}
+
+.text-wine-red {
+  color: #732435;
+}
+
+.bg-wine-red {
+  background-color: #732435;
+}
+
+.text-white {
+  color: #ffffff;
+}
+
+.bg-white {
+  background-color: #ffffff;
+}
+
+.font-marcellus {
+  font-family: "Marcellus", serif;
+}
+
+.font-pt-serif {
+  font-family: "PT Serif", serif;
+}
