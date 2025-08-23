@@ -3,8 +3,31 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Wine, RotateCcw, Download, Share2, FileDown } from "lucide-react"
+import { Wine, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  DndContext,
+  DragOverlay,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  useDroppable,
+  DragStartEvent,
+  DragOverEvent,
+  DragEndEvent,
+} from "@dnd-kit/core"
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSorting,
+} from "@dnd-kit/sortable"
+import {
+  useSortable,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 
 interface GameConfig {
   createdAt: string
@@ -39,12 +62,93 @@ const TIER_TEXT_COLORS = {
   F: "text-purple-600 border-purple-300"
 }
 
+// Sortable Wine Card Component
+function SortableWineCard({ wine, tier }: { wine: WineCard; tier: string | null }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: wine.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={`bg-white px-3 py-2 rounded-md shadow-sm cursor-move hover:shadow-md transition-shadow border-2 ${
+        tier ? TIER_TEXT_COLORS[tier as keyof typeof TIER_TEXT_COLORS] : "border-linen-border"
+      }`}
+    >
+      <span className="text-sm font-pt-serif font-semibold">{wine.name}</span>
+    </div>
+  )
+}
+
+// Droppable Container Component
+function DroppableContainer({ 
+  id, 
+  children, 
+  className 
+}: { 
+  id: string; 
+  children: React.ReactNode; 
+  className?: string 
+}) {
+  const {
+    setNodeRef,
+    isOver,
+  } = useDroppable({ 
+    id,
+    data: {
+      type: 'container'
+    }
+  })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`${className} ${isOver ? "ring-2 ring-plum-secondary" : ""}`}
+    >
+      {children}
+    </div>
+  )
+}
+
 export default function TastingBoard() {
   const router = useRouter()
   const [config, setConfig] = useState<GameConfig | null>(null)
   const [wines, setWines] = useState<WineCard[]>([])
-  const [placements, setPlacements] = useState<Record<number, string | null>>({})
-  const [draggedWine, setDraggedWine] = useState<number | null>(null)
+  const [containers, setContainers] = useState<Record<string, number[]>>({
+    tray: [],
+    S: [],
+    A: [],
+    B: [],
+    C: [],
+    D: [],
+    F: [],
+  })
+  const [activeId, setActiveId] = useState<number | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
 
   // Load game configuration on mount
   useEffect(() => {
@@ -56,51 +160,150 @@ export default function TastingBoard() {
 
     const gameConfig: GameConfig = JSON.parse(savedConfig)
     setConfig(gameConfig)
-    setPlacements(gameConfig.placements)
 
     // Generate wine cards based on config
     const wineCards: WineCard[] = []
+    const initialContainers: Record<string, number[]> = {
+      tray: [],
+      S: [],
+      A: [],
+      B: [],
+      C: [],
+      D: [],
+      F: [],
+    }
+
     for (let i = 0; i < gameConfig.settings.bottleCount; i++) {
       wineCards.push({
         id: i,
         name: gameConfig.settings.names?.[i] || `Wine ${i + 1}`
       })
+
+      // Place wines in their saved containers
+      const placement = gameConfig.placements[i]
+      if (placement) {
+        initialContainers[placement].push(i)
+      } else {
+        initialContainers.tray.push(i)
+      }
     }
+
     setWines(wineCards)
+    setContainers(initialContainers)
   }, [router])
 
-  const handleDragStart = (e: React.DragEvent, wineId: number) => {
-    setDraggedWine(wineId)
-    e.dataTransfer.effectAllowed = 'move'
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as number)
   }
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-  }
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event
 
-  const handleDrop = (e: React.DragEvent, tier: string | null) => {
-    e.preventDefault()
-    if (draggedWine === null) return
+    if (!over) return
 
-    const newPlacements = { ...placements }
-    newPlacements[draggedWine] = tier
+    const activeContainer = findContainer(active.id as number)
+    const overContainer = over.data.current?.type === 'container' 
+      ? over.id as string 
+      : findContainer(over.id as number)
 
-    setPlacements(newPlacements)
-    setDraggedWine(null)
-
-    // Update localStorage
-    if (config) {
-      const updatedConfig = {
-        ...config,
-        placements: newPlacements
-      }
-      localStorage.setItem("sommwhere:tasting:v1", JSON.stringify(updatedConfig))
+    if (!activeContainer || !overContainer || activeContainer === overContainer) {
+      return
     }
+
+    setContainers((prev) => {
+      const activeItems = [...prev[activeContainer]]
+      const overItems = [...prev[overContainer]]
+
+      // Remove active item from its container
+      const activeIndex = activeItems.indexOf(active.id as number)
+      activeItems.splice(activeIndex, 1)
+
+      // Add active item to new container
+      overItems.push(active.id as number)
+
+      return {
+        ...prev,
+        [activeContainer]: activeItems,
+        [overContainer]: overItems,
+      }
+    })
+  }
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (!over) {
+      setActiveId(null)
+      return
+    }
+
+    const activeContainer = findContainer(active.id as number)
+    const overContainer = over.data.current?.type === 'container' 
+      ? over.id as string 
+      : findContainer(over.id as number)
+
+    if (!activeContainer || !overContainer) {
+      setActiveId(null)
+      return
+    }
+
+    if (activeContainer === overContainer) {
+      // Reorder within the same container
+      const containerItems = containers[overContainer]
+      const activeIndex = containerItems.indexOf(active.id as number)
+      const overIndex = containerItems.indexOf(over.id as number)
+
+      if (activeIndex !== overIndex) {
+        setContainers((prev) => ({
+          ...prev,
+          [overContainer]: arrayMove(prev[overContainer], activeIndex, overIndex),
+        }))
+      }
+    }
+
+    // Save to localStorage
+    saveToLocalStorage()
+    setActiveId(null)
+  }
+
+  const findContainer = (id: number) => {
+    for (const [key, items] of Object.entries(containers)) {
+      if (items.includes(id)) {
+        return key
+      }
+    }
+    return null
+  }
+
+  const saveToLocalStorage = () => {
+    if (!config) return
+
+    const newPlacements: Record<number, string | null> = {}
+    for (const [container, items] of Object.entries(containers)) {
+      for (const itemId of items) {
+        newPlacements[itemId] = container === "tray" ? null : container
+      }
+    }
+
+    const updatedConfig = {
+      ...config,
+      placements: newPlacements,
+    }
+    localStorage.setItem("sommwhere:tasting:v1", JSON.stringify(updatedConfig))
   }
 
   const handleReset = () => {
-    setPlacements({})
+    const resetContainers: Record<string, number[]> = {
+      tray: wines.map(w => w.id),
+      S: [],
+      A: [],
+      B: [],
+      C: [],
+      D: [],
+      F: [],
+    }
+    setContainers(resetContainers)
+    
     if (config) {
       const updatedConfig = {
         ...config,
@@ -110,12 +313,9 @@ export default function TastingBoard() {
     }
   }
 
-  const getWinesInTier = (tier: string) => {
-    return wines.filter(wine => placements[wine.id] === tier)
-  }
-
-  const getUnplacedWines = () => {
-    return wines.filter(wine => !placements[wine.id])
+  const getActiveWine = () => {
+    if (activeId === null) return null
+    return wines.find(w => w.id === activeId)
   }
 
   if (!config) {
@@ -125,90 +325,105 @@ export default function TastingBoard() {
   }
 
   return (
-    <div className="min-h-screen bg-ivory text-charcoal flex flex-col">
-      {/* Header */}
-      <header className="container mx-auto py-4 px-4 flex justify-between items-center">
-        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <Wine className="h-8 w-8 text-plum-secondary" />
-          <h1 className="text-2xl font-marcellus font-normal text-charcoal">Sommwhere</h1>
-        </Link>
-        
-        {/* Toolbar */}
-        <div className="flex gap-2">
-          <Button
-            onClick={handleReset}
-            size="sm"
-            variant="outline"
-            className="border-linen-border text-charcoal hover:bg-stone"
-          >
-            <RotateCcw className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Reset</span>
-          </Button>
-        </div>
-      </header>
-
-      {/* Main Board */}
-      <main className="flex-1 container mx-auto px-4 pb-4">
-        {/* Wine Tray */}
-        <div className="mb-6">
-          <h2 className="text-sm font-pt-serif text-charcoal-muted mb-2">Drag wines to rank them:</h2>
-          <div 
-            className="bg-stone rounded-lg p-4 min-h-[80px] border-2 border-dashed border-linen-border"
-            onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, null)}
-          >
-            <div className="flex flex-wrap gap-2">
-              {getUnplacedWines().map(wine => (
-                <div
-                  key={wine.id}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, wine.id)}
-                  className="bg-white px-3 py-2 rounded-md shadow-sm cursor-move hover:shadow-md transition-shadow border border-linen-border"
-                >
-                  <span className="text-sm font-pt-serif text-charcoal">{wine.name}</span>
-                </div>
-              ))}
-              {getUnplacedWines().length === 0 && (
-                <p className="text-charcoal-muted text-sm font-pt-serif italic">
-                  All wines have been ranked!
-                </p>
-              )}
-            </div>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="min-h-screen bg-ivory text-charcoal flex flex-col">
+        {/* Header */}
+        <header className="container mx-auto py-4 px-4 flex justify-between items-center">
+          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <Wine className="h-8 w-8 text-plum-secondary" />
+            <h1 className="text-2xl font-marcellus font-normal text-charcoal">Sommwhere</h1>
+          </Link>
+          
+          {/* Toolbar */}
+          <div className="flex gap-2">
+            <Button
+              onClick={handleReset}
+              size="sm"
+              variant="outline"
+              className="border-linen-border text-charcoal hover:bg-stone"
+            >
+              <RotateCcw className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Reset</span>
+            </Button>
           </div>
-        </div>
+        </header>
 
-        {/* Tier Rows */}
-        <div className="space-y-3">
-          {config.tiers.map(tier => (
-            <div key={tier} className="flex gap-3">
-              {/* Tier Label */}
-              <div className={`w-12 h-20 sm:w-16 sm:h-24 rounded-lg flex items-center justify-center font-marcellus text-2xl sm:text-3xl font-bold text-white ${TIER_COLORS[tier as keyof typeof TIER_COLORS]}`}>
-                {tier}
-              </div>
-              
-              {/* Tier Drop Zone */}
-              <div
-                className="flex-1 bg-white/50 rounded-lg p-3 sm:p-4 min-h-[80px] sm:min-h-[96px] border-2 border-dashed border-linen-border"
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, tier)}
+        {/* Main Board */}
+        <main className="flex-1 container mx-auto px-4 pb-4">
+          {/* Wine Tray */}
+          <div className="mb-6">
+            <h2 className="text-sm font-pt-serif text-charcoal-muted mb-2">Drag wines to rank them:</h2>
+            <SortableContext 
+              items={containers.tray}
+              strategy={verticalListSorting}
+            >
+              <DroppableContainer
+                id="tray"
+                className="bg-stone rounded-lg p-4 min-h-[80px] border-2 border-dashed border-linen-border"
               >
                 <div className="flex flex-wrap gap-2">
-                  {getWinesInTier(tier).map(wine => (
-                    <div
-                      key={wine.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, wine.id)}
-                      className={`bg-white px-3 py-2 rounded-md shadow cursor-move hover:shadow-lg transition-shadow border-2 ${TIER_TEXT_COLORS[tier as keyof typeof TIER_TEXT_COLORS]}`}
-                    >
-                      <span className="text-sm font-pt-serif font-semibold">{wine.name}</span>
-                    </div>
-                  ))}
+                  {containers.tray.map(id => {
+                    const wine = wines.find(w => w.id === id)
+                    if (!wine) return null
+                    return <SortableWineCard key={wine.id} wine={wine} tier={null} />
+                  })}
+                  {containers.tray.length === 0 && (
+                    <p className="text-charcoal-muted text-sm font-pt-serif italic">
+                      All wines have been ranked!
+                    </p>
+                  )}
                 </div>
+              </DroppableContainer>
+            </SortableContext>
+          </div>
+
+          {/* Tier Rows */}
+          <div className="space-y-3">
+            {["S", "A", "B", "C", "D", "F"].map(tier => (
+              <div key={tier} className="flex gap-3">
+                {/* Tier Label */}
+                <div className={`w-12 h-20 sm:w-16 sm:h-24 rounded-lg flex items-center justify-center font-marcellus text-2xl sm:text-3xl font-bold text-white ${TIER_COLORS[tier as keyof typeof TIER_COLORS]}`}>
+                  {tier}
+                </div>
+                
+                {/* Tier Drop Zone */}
+                <SortableContext 
+                  items={containers[tier]}
+                  strategy={verticalListSorting}
+                >
+                  <DroppableContainer
+                    id={tier}
+                    className="flex-1 bg-white/50 rounded-lg p-3 sm:p-4 min-h-[80px] sm:min-h-[96px] border-2 border-dashed border-linen-border"
+                  >
+                    <div className="flex flex-wrap gap-2">
+                      {containers[tier].map(id => {
+                        const wine = wines.find(w => w.id === id)
+                        if (!wine) return null
+                        return <SortableWineCard key={wine.id} wine={wine} tier={tier} />
+                      })}
+                    </div>
+                  </DroppableContainer>
+                </SortableContext>
               </div>
-            </div>
-          ))}
-        </div>
-      </main>
-    </div>
+            ))}
+          </div>
+        </main>
+      </div>
+
+      {/* Drag Overlay */}
+      <DragOverlay>
+        {activeId !== null && getActiveWine() ? (
+          <div className="bg-white px-3 py-2 rounded-md shadow-lg border-2 border-plum-secondary cursor-move">
+            <span className="text-sm font-pt-serif font-semibold">{getActiveWine()!.name}</span>
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   )
 }
