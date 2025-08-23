@@ -59,6 +59,18 @@ const config: Config = {
         "primary-dark": "#303636",
         "wine-red": "#732435",
         white: "#FFFFFF",
+        // New color system
+        "teal-primary": "#0B4F66",
+        "plum-secondary": "#642050",
+        "rosewood": "#4B0C06",
+        "ivory": "#ECEBDF",
+        "stone": "#F7F5F1",
+        "charcoal": "#11293A",
+        "charcoal-muted": "#5B6974",
+        "linen-border": "#D8D2C8",
+        "crimson": "#9B2226",
+        "verdant": "#2D6A4F",
+        "gray-inactive": "#8E8E93",
       },
       borderRadius: {
         lg: "var(--radius)",
