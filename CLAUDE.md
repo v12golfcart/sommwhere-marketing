@@ -55,6 +55,12 @@ pnpm lint
 - Typeform survey link: https://chrisramesh.typeform.com/to/aFzznCNs (used for waitlist)
 - Vercel deployment connected to v0.dev
 
+## Current Development: Tasting Game V1
+- Building a wine tasting tier list game at `/tasting` route
+- Single-player MVP with local state (no backend)
+- See `TASTING_GAME_SPEC.md` for full requirements
+- Key features: drag & drop wines into tiers (S-F), export results
+
 ## Important Notes
 - This is a v0.dev synced repository - changes made in v0.dev are automatically pushed here
 - The project is currently on branch `tasting-game-v1` with `main` as the default branch
