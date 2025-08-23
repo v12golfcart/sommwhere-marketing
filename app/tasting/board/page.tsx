@@ -117,7 +117,11 @@ function DroppableContainer({
   return (
     <div
       ref={setNodeRef}
-      className={`${className} ${isOver ? "ring-2 ring-plum-secondary" : ""}`}
+      className={
+        isOver 
+          ? className?.replace("border-2 border-dashed border-linen-border", "border-2 border-solid border-plum-secondary")
+          : className
+      }
     >
       {children}
     </div>
