@@ -21,6 +21,11 @@ export default function Home() {
               <Wine className="h-8 w-8 text-white" />
               <h1 className="text-2xl font-marcellus font-normal text-white">Sommwhere</h1>
             </div>
+            <nav>
+              <Link href="/tasting" className="text-white hover:text-white/80 font-pt-serif text-lg transition-colors">
+                Tasting Game
+              </Link>
+            </nav>
           </header>
 
           {/* Hero Content */}
