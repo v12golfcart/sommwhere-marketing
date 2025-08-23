@@ -69,15 +69,18 @@ export default function TastingBoard() {
     setWines(wineCards)
   }, [router])
 
-  const handleDragStart = (wineId: number) => {
+  const handleDragStart = (e: React.DragEvent, wineId: number) => {
     setDraggedWine(wineId)
+    e.dataTransfer.effectAllowed = 'move'
   }
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
   }
 
-  const handleDrop = (tier: string | null) => {
+  const handleDrop = (e: React.DragEvent, tier: string | null) => {
+    e.preventDefault()
     if (draggedWine === null) return
 
     const newPlacements = { ...placements }
@@ -152,14 +155,14 @@ export default function TastingBoard() {
           <div 
             className="bg-stone rounded-lg p-4 min-h-[80px] border-2 border-dashed border-linen-border"
             onDragOver={handleDragOver}
-            onDrop={() => handleDrop(null)}
+            onDrop={(e) => handleDrop(e, null)}
           >
             <div className="flex flex-wrap gap-2">
               {getUnplacedWines().map(wine => (
                 <div
                   key={wine.id}
                   draggable
-                  onDragStart={() => handleDragStart(wine.id)}
+                  onDragStart={(e) => handleDragStart(e, wine.id)}
                   className="bg-white px-3 py-2 rounded-md shadow-sm cursor-move hover:shadow-md transition-shadow border border-linen-border"
                 >
                   <span className="text-sm font-pt-serif text-charcoal">{wine.name}</span>
@@ -187,14 +190,14 @@ export default function TastingBoard() {
               <div
                 className="flex-1 bg-white/50 rounded-lg p-3 sm:p-4 min-h-[80px] sm:min-h-[96px] border-2 border-dashed border-linen-border"
                 onDragOver={handleDragOver}
-                onDrop={() => handleDrop(tier)}
+                onDrop={(e) => handleDrop(e, tier)}
               >
                 <div className="flex flex-wrap gap-2">
                   {getWinesInTier(tier).map(wine => (
                     <div
                       key={wine.id}
                       draggable
-                      onDragStart={() => handleDragStart(wine.id)}
+                      onDragStart={(e) => handleDragStart(e, wine.id)}
                       className={`bg-white px-3 py-2 rounded-md shadow cursor-move hover:shadow-lg transition-shadow border-2 ${TIER_TEXT_COLORS[tier as keyof typeof TIER_TEXT_COLORS]}`}
                     >
                       <span className="text-sm font-pt-serif font-semibold">{wine.name}</span>
