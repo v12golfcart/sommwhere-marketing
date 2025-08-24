@@ -77,7 +77,10 @@ function SortableWineCard({ wine, tier }: { wine: WineCard; tier: string | null 
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-  }
+    WebkitUserSelect: 'none',
+    userSelect: 'none',
+    WebkitTouchCallout: 'none',
+  } as React.CSSProperties
 
   return (
     <div
@@ -85,11 +88,12 @@ function SortableWineCard({ wine, tier }: { wine: WineCard; tier: string | null 
       style={style}
       {...attributes}
       {...listeners}
-      className={`bg-white px-3 py-2 rounded-md shadow-sm cursor-move hover:shadow-md transition-shadow border-2 ${
+      onContextMenu={(e) => e.preventDefault()}
+      className={`bg-white px-3 py-2 rounded-md shadow-sm cursor-move hover:shadow-md transition-shadow border-2 select-none touch-none ${
         tier ? TIER_TEXT_COLORS[tier as keyof typeof TIER_TEXT_COLORS] : "border-linen-border"
       }`}
     >
-      <span className="text-sm font-pt-serif font-semibold">{wine.name}</span>
+      <span className="text-sm font-pt-serif font-semibold pointer-events-none">{wine.name}</span>
     </div>
   )
 }
