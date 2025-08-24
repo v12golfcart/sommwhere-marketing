@@ -98,15 +98,18 @@ function SortableWineCard({ wine, tier }: { wine: WineCard; tier: string | null 
 function DroppableContainer({ 
   id, 
   children, 
-  className 
+  className,
+  items 
 }: { 
   id: string; 
   children: React.ReactNode; 
-  className?: string 
+  className?: string;
+  items: number[]
 }) {
   const {
     setNodeRef,
     isOver,
+    over
   } = useDroppable({ 
     id,
     data: {
@@ -114,11 +117,14 @@ function DroppableContainer({
     }
   })
 
+  // Check if we're over this container OR any item in this container
+  const isOverContainer = isOver || (over && items.includes(over.id as number))
+
   return (
     <div
       ref={setNodeRef}
       className={
-        isOver 
+        isOverContainer 
           ? className?.replace("border-2 border-dashed border-linen-border", "border-2 border-solid border-plum-secondary")
           : className
       }
@@ -204,6 +210,8 @@ export default function TastingBoard() {
     const { active, over } = event
 
     if (!over) return
+
+    console.log('Dragging over:', over.id)
 
     const activeContainer = findContainer(active.id as number)
     const overContainer = over.data.current?.type === 'container' 
@@ -331,7 +339,6 @@ export default function TastingBoard() {
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
@@ -370,6 +377,7 @@ export default function TastingBoard() {
               <DroppableContainer
                 id="tray"
                 className="bg-stone rounded-lg p-4 min-h-[80px] border-2 border-dashed border-linen-border"
+                items={containers.tray}
               >
                 <div className="flex flex-wrap gap-2">
                   {containers.tray.map(id => {
@@ -404,6 +412,7 @@ export default function TastingBoard() {
                   <DroppableContainer
                     id={tier}
                     className="flex-1 bg-white/50 rounded-lg p-3 sm:p-4 min-h-[80px] sm:min-h-[96px] border-2 border-dashed border-linen-border"
+                    items={containers[tier]}
                   >
                     <div className="flex flex-wrap gap-2">
                       {containers[tier].map(id => {
