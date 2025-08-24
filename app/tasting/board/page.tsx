@@ -22,7 +22,7 @@ import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
-  verticalListSorting,
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import {
   useSortable,
@@ -376,7 +376,7 @@ export default function TastingBoard() {
             <h2 className="text-sm font-pt-serif text-charcoal-muted mb-2">Drag wines to rank them:</h2>
             <SortableContext 
               items={containers.tray}
-              strategy={verticalListSorting}
+              strategy={verticalListSortingStrategy}
             >
               <DroppableContainer
                 id="tray"
@@ -411,7 +411,7 @@ export default function TastingBoard() {
                 {/* Tier Drop Zone */}
                 <SortableContext 
                   items={containers[tier]}
-                  strategy={verticalListSorting}
+                  strategy={verticalListSortingStrategy}
                 >
                   <DroppableContainer
                     id={tier}
